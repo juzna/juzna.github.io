@@ -1,0 +1,6 @@
+# TODO
+
+- texy support for jekyll, or
+- convert texy posts to markdown
+- handle comments
+- better layout
