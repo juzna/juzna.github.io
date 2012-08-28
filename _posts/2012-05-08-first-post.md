@@ -1,7 +1,7 @@
 ---
 layout: default
-title: My first post
+title: My first post GitHub Pages
 ---
 
-Just experimenting, now with a proper blog post
+Just experimenting, now with a proper blog post :)
 
