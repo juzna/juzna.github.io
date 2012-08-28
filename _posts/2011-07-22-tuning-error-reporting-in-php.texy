@@ -1,0 +1,51 @@
+### Tuning error reporting in PHP
+
+As developers, we see error messages tens or hundreds time a day. Identifying cause of such error is usually the most difficult part after which comes often easy and quick fix. It's therefore crucial to identify that cause as quickly as possible, so that we can focus on *real* programmer's work.
+
+PHP has very simple error reporting facilities by default, which are not so helpful in many cases. Hence people tend to write their workaround to display some more details about raised errors or exceptions, with additional capabilities like storing the report to a file or sending it to developer's email. To make it look at least little bit nice, some people can create horrible stuff and crazy workaround, and make error reports practically useless, as I had chance to see in my company. Please, don't do that! There are better ways.
+
+If you hate seeing error screens, try to install *Nette Framework* and use it's "debugger":http://doc.nette.org/en/debugging. It can show you error report in a very nicely formatted page, you can see fragments of **relevant source code**, **function arguments** etc. You can even set up your IDE and have it only **one click** away from the error report page. Having the chance just to click to get into your IDE on a specific line of code, where the problem happened, is just amazing. No more searching thru code, you can just fix problems quickly. But why should I explain it to you, just have a look at the "documentation":http://doc.nette.org/en/debugging.
+
+
+Going little bit deeper
+******************
+
+PHP doesn't make it sometimes easy for us. At least not as easy as it could be. It gives us lot's of information in exception *stack trace*, but something is still missing: the objects themselves. Imagine having a class for *database query/statement*. You build the query in few steps within the object and then call *execute*. With some bad luck, query execution will fail and cause an exception. In stack trace, you'll be able to find all kinds of information, but **not** the *statement object* itself and so no access to parts of the query which was executed (or the whole query itself). Just look at an error screen from "Doctrine ORM":http://doctrine-project.org
+
+[* http://juzna.cz/php/exception/exception1.png *] Example of an exception difficult to understand
+
+But PHP 5.3.6 brought a new option for "debug_backtrace":http://php.net/debug_backtrace method, which will allow us to get the whole stack trace also with object references in it. Why is it not in exception's stack trace? I must say I don't know. So why, just for fun, not adding it there? It would mean little update for PHP internals (but just 5 lines of code, don't worry).
+
+**And now:**
+
+[* http://juzna.cz/php/exception/exception2.png *] Exception with objects in *stack trace*
+
+As you can see on the picture above, objects are now stored in exception's *stack trace* and can be displayed in the same way as method arguments. We can now dive into object's properties and see all the useful stuff there. So finally, we know what the query was and hopefully we already understand cause of the problem. Voila, we can focus on fixing it, which will be very easy. Thanks, PHP and Nette, for telling us all we needed to know about the exception.
+
+I want it too
+******************
+
+Sure, that was the reason for me to write this article. So that we all can benefit from this nice features. You will need to recompile PHP with a small "patch":http://juzna.cz/php/exception/patch-php.patch and setting *exception_constructor_options = 1* in your php.ini. This will tell PHP to give us what we want. And because this feature is not yet supported in PHP itself, you cannot expect Nette Framework to implement it. So please just "patch":http://juzna.cz/php/exception/patch-nette.patch your Nette installation as well.
+
+That's it, should be pretty easy for intermediate skilled PHP developers. Now, you can enjoy full beauty of debugging, as the whole tech team in "eDR":http://www.edigitalresearch.com already does.
+
+
+
+
+----------
+## Comments
+
+**juzna** | 2011-07-22
+I noticed on Twitter people asking, why I din't send the patch to PHP first. I did! However I'm not familiar with PHP reporting process, so I might done it wrong :/ Dunno. If you have any ideas what can I do, they're welcome
+
+
+**kukulich** | 2011-07-24
+Open either bug report/feature request on http://bugs.php.net/ or write to PHP internals list (http://php.net/mailing-lists.php). I think It would be better this discuss on internal list first.
+
+
+**juzna.cz** | 2011-07-25
+@kukulich I tried submitting a bug report in May (https://bugs.php.net/bug.php?id=5469) but without any response. I tried PHP internals mailing list, but it always came back with failure. Dunno why, I think I'll try again tomorrow.
+
+
+**Jakub Vrána** | 2011-07-25
+The debug_backtrace() option is available since PHP 5.2.5. PHP 5.3.6 just renamed it.

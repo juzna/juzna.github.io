@@ -1,0 +1,106 @@
+### Banning on optical network
+
+Based on true story in Helemik company
+
+**Disclaimer**: My colleges asked me, how does blocking on optical network in our company works. They probably expected very short technical detail, but since I was in a good mood, I wrote 'em this story. Hope they will hate me for that. (But at least they'll practice their english :) 
+
+
+So, where to begin.
+
+Once upon a time there was a lazy customer who didn't want to pay his
+internet bills. He just thought he could surf for free and nobody
+would notice - considering the large amount of customers the provider
+has, they can't all be checked for their payments. However, he wasn't
+very lucky with his idea. The meant-to-be-stupid provider he was
+against to was big hero El Helemikos, famous in all towns and villages
+from west to east. In that company, that was running specialized
+software for maintaining not just all customers, but all network
+devices as well. Despite of the fact that this software was still
+running on old piece of hardware, called "Five" because of it's IP
+address ending with number five, it was still capable of validating
+thousands of customers and tens of thousands of their payments. Each
+night, this mighty software just took one customer after another and
+recalculated his payments. Shall it realize given customer was due
+date with his payment for more than two weeks, it has written a cruel
+scenario to follow - it could ban the customer from connecting to
+public Internet. Let me tell you little bit about this procedures and
+also about customer's choices for a fair fight.
+
+Since the network, which our system was taking care about, had been
+growing rapidly for couple of previous years, all the php code
+responsible for blocking became one big piece of mess. All blocking
+was based on IP addresses, despite on optical network were blocked
+whole ports on edge switches: On all switches, there was a guest vlan
+called "the sixteen" created for customers unauthenticated to the
+network. This vlan was also used for blocking customers by simple
+means. If you would have a look into database dedicated to radius, you
+can find a group "ban-optika". When blocking a customer on optical
+network, the system just used his IP address to find actual MAC
+address and appropriate vlan number. This touple, being used as a user
+name by the 3com switches when authenticating a edge port to network,
+was just added to this ban group. Then, when switches asked radius for
+authenticating such a blocked customer, being in a ban group meant
+presence of some additional parameters in radius' response. If you
+wonder what in particular could be in this response, you can have a
+look into radgroupreply table in appropriate database (the most
+important message is telling switch to put this customer into "the
+sixteen" vlan). So, however being successfully authenticated, customer
+was not authorized to access proper vlan with internet access. Being
+in "the sixteen" vlan, customer gained temporary IP address from
+Mikrotik's hotspot and when opening a web browser (or IE, which can or
+sometimes cannot be considered a web browser) was redirected to
+helemik.cz:84 while passing customers mac address in an GET argument.
+On this URL address, classic "welcome to optical network" message was
+normally displayed. While being used for blocking as well, there was a
+slight check in first lines of code - when customer came from an mac
+address being blocked, he's browser was told to follow one more
+redirect. And this redirect went to last page customer wanted to see:
+the blocking page. This blocking page just set up some variables and
+called the-mighty-systems module ban with function name I can not
+recall now (but you may find it in source code if you want). Blocking
+page with relevant message was displayed to the customer telling him
+of his luck of being doomed. No internet connection. At all. And no
+facebook either.
+
+Luckily, there was a chance for this customer, called a "soft-ban". It
+was a special type of ban, which could have been unlocked by the
+customer himself. By clicking on "un-ban" button, customer was removed
+radius' ban group and his port on edge switch was restarted, putting
+him in right vlan with internet access. Thus, customers being lucky
+enough to have just this soft-ban, were able to poke their friends on
+FB not even thirty seconds later.
+
+
+If you wanna know some technical details how the mighty system was
+doing all this, read further.
+
+Blocking: Calling methods from scripts/classes/ban.inc.php - this
+finds several devices on route to customer (first mikrotik, one
+supervisor, shaper II and also L2 parent - which is edge switch for
+customers on optical network) and sent a message 'ban' to daemons
+taking care about there routers. These daemons are executed from
+daemons/apon/main.php, which in than executes given class based on
+operating system on given router. For blocking ports on 4210 switches,
+you should be looking for 4210.inc.php. This specific driver performs
+IP to MAC lookup mentioned before and also adding it to radius' ban
+group. Then, as the source code is telling us, it checks whether
+customers port is up and running and if so, it restarts it.
+In your new approach you suggest, you should change this code to
+modify port's setting moving it to another dedicated vlan.
+
+Unbanning is very similar. Script in scripts/classes/ban.inc.php just
+looks up the same routers (including edge switch being l2 parent) and
+sends them "unban" message. According to the source code, this message
+means much similar actions to banning procedure.
+In your new approach, you should change the port having access to
+standard internet vlan.
+
+You need to keep in mind that the deamons are running on background.
+So when changing source code of it, you need to restart it. (or just
+kill it. There is one master daemon taking care of all the small ones
+which can start 'em in case they're needed).
+
+
+
+
+PS: All the names may or may not be real, depends what you prefer.

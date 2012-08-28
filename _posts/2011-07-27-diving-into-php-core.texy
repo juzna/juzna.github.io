@@ -1,0 +1,19 @@
+### Diving into PHP core
+
+I was always wondering how difficult it is to program a programming language, what caveats are there in *compiling source code* and *executing bytecode* in virtual machine. I always thought it must be so easy, even I just somehow knew it's complicated. So I decided to dive deep into *source code of PHP* to find adventures and discover all this stuff.
+
+I just realized how that all the C code is pretty difficult to understand: lots of macros everywhere changing the code based on compiling environment. Tricky *unions* which have only parts of them valid based on external conditions, while accessing to the other *wrong* parts will lead to very insidious errors. Pointer magic which starts with cheap tricks like *three-level indirection* (`zval ***`) but gets better with *casting* them just to *two-level indirection* (`void **`) for some functions. Where did the last start disappear, huh? Magic? No, just a trick, but it's tough to understand it even if someone explains it to you.
+
+## Welcome to playground
+
+What's the best way to learn things? Playing with it, having fun and try crazy stuff and see how it reacts. So you may expect more blogposts about adding new features to PHP, changing it's behaviour or such stuff. I may also explain how some internal parts work, because I couldn't find much about it out there. This is all meant primarily just for fun, for me to discover how difficult something can be. Or on the other hand, to show you that something is really easy and might improve our work in PHP.
+
+So, welcome to showcase of my new playground, enjoy it, like it, hate it, **write comments** and your ideas.
+
+
+
+----------
+## Comments
+
+**&lt;SYSTEM FAILURE&gt;** | 2011-07-28
+Yahoo! Let's code in assembler! Yeeeee! YAY!

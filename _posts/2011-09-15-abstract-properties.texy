@@ -1,0 +1,94 @@
+### Abstract properties
+
+I hope you know you can declare classes and methods as **abstract** in most programming languages (including PHP) and if you write high quality object oriented code, I guess you use them quiet often. There is no discussion if they're good or not (at least I hope; and I'd like to hear your opinions).
+
+But what about **abstract properties**, do you use them? And do you use them in PHP? Are they good or bad habit? We use them in my company pretty often, in similar way as *Zend Framework* does. But we still miss official support for them from PHP's side.
+
+
+## Little bit of history
+
+Many years ago, *abstract methods* and *classes* we're no supported in PHP, but people used them anyway. They had just no means to enforce them in PHP itself, so they started adding comments or annotations saying, that a method is abstract. They just knew how to use such classes, they knew they <strike>couldn't</strike> shouldn't *instantiate* them, and everything was fine. Almost.
+
+From PHP's point of view, there were not abstract classes and so it let you instantiate them, which could led to various problems. It was time for PHP 5 to come and show it's great potential.
+
+Note: have you noticed we've been using annotations for ages even though PHP doesn't support them natively either? ;)
+
+## Native abstract classes and methods
+
+PHP 5 brought native support for **abstract classes** and **abstract methods**. It is able to enforce them and  shows you meaningful error messages during compilation time (compiling to bytecode). It stops errors from being created or from being found too late. And it's not the only advantage - IDE's now know the *abstract keyword* as well and can generate scaffolding code for you. Everyone benefits from native support.
+
+
+## Why not properties?
+
+**Abstract properties** are not natively supported by PHP, I guess because nobody saw a good reason for them. And also, because many people consider them a bad solution for badly designed application. Everyone tells me to use abstract methods, because they make **clean object oriented design**.
+
+Let me introduce you my problem and possible solutions.
+
+## Example: Renderers
+
+*Renderer design pattern* consists of classes, which render objects (into strings). Each *renderer class* can render one or more *domain classes*, e.g. `MovieNameRenderer` can take a `Movie` object and give you it's name, or `MovieGenreRenderer` can convert a constant into human readable genre of specified movie. With such *renderers*, you can have generic `ListView` widget which takes a `DataSource` and renders each object using specified `Renderer`.
+
+/---code php
+interface IRenderer {
+  /** @return string */
+  function render($obj);
+}
+\---
+
+
+When you want to have many simple *renderers* which just take a property of given object, you have basically two options:
+/---code php
+abstract class PropertyRenderer implements IRenderer {
+  protected $propertyName; // abstract, should be defined in descendants
+ 
+  function render($obj) {
+    return $obj->{$this->propertyName};
+  }
+}
+
+// Definition of particular renderer becomes easy
+class MovieNameRenderer extends PropertyRenderer {
+  protected $propertyName = 'name';
+}
+\---
+
+This is however not a clean solution, as PHP won't force you to define `$propertyName`. You can solve this by using abstract methods instead:
+/---code php
+abstract class PropertyRenderer implements IRenderer {
+  abstract function getPropertyName();
+ 
+  function render($obj) {
+    return $obj->{$this->getPropertyName()};
+  }
+}
+
+// It becomes more complicated and less efficient
+class MovieNameRenderer extends PropertyRenderer {
+  function getPropertyName() {
+    return 'name';
+  }
+}
+\---
+
+(Check all the examples in "Gist":https://gist.github.com/1218914 with more relevant methods)
+
+It becomes even more complicated and even much less efficient with **label renderers**. Compare those two implementations from Gist: one using **abstract properties** or **abstract methods**. If I look at the one which uses *properties*, it's shorter, seems more clear to me and it's much faster. Every function call brings some overhead, which in my "test case":https://gist.github.com/1218914#file_test.php made the second implementation cca 75% slower.
+
+So, there are some good reasons to use *abstract properties* (either natively supported or not).
+
+
+## Example 2 - Zend Db
+
+For another example, have a look at "Zend Db":http://framework.zend.com/manual/en/zend.db.table.html#zend.db.table.defining.table-schema, where you define *table name* using a property `$_name` (here it's not strictly abstract, because you can omit it, but it could and probably should be abstract). Class `Zend_Db_Table_Abstract` wants all it descendants to define such property, so it should be abstract and PHP would be able to report compile errors.
+
+
+## Implementation
+
+Because I'm trying to learn how "PHP works internally":http://blog.juzna.cz/2011/07/diving-into-php-core/, I decided to add **abstract properties** to world. It showed up to be pretty easy, you can use the "patch":https://github.com/juzna/php-src/commit/9d7dde767d4e5a8a4ac30a64c2b9affdd768ad10 against trunk (but works also against 5.3) and I wrote also some "tests":https://github.com/juzna/php-src/commit/46aee6d63265af321b42cc2fd0d274d2982f0330. It won't allow you anything new, but just enforce what you already do and thus make it cleaner. Maybe we will see it in PHP 5.5?
+
+
+## Conclusion
+
+I think I need abstract properties to make my application clean and efficient at the same time. I can't see any reason why *abstract properties* would be bad. I would love them in official PHP. What do you think?
+
+<p style="color: gray">Next time: native annotations? ;)</p>

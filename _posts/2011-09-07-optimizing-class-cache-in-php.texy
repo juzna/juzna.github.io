@@ -1,0 +1,105 @@
+### Optimizing class cache in PHP
+
+Some time ago I read an "article":http://www.xarg.org/2011/06/php-hacking/ about hacking PHP internals to improve its performance. I liked the idea of avoiding unnecessary *syscall*s, because *context switching* is considered to be quiet expensive operation. And I realized there is quiet significant amount of work which needs be performed with *class autoloading*. So I decided to hack it and make it little bit better.
+
+### Classes and autoloading
+
+I need to start with some theory and explain how PHP works with classes. I hope you all already know that PHP compiles source code into *bytecode*, which is then executed, one *opcode* at a time (please read something "more":http://blog.golemon.com/2008/01/understanding-opcodes.html if you're not familiar with this).
+
+Whenever you want to create new instance of a class (e.g. `new MyClass();`), at least three *opcode*s are generated:
+/---
+0  >   ZEND_FETCH_CLASS            :0      'MyClass'
+1      NEW                                 :0
+2      DO_FCALL_BY_NAME         0          
+\---
+(you can use "Vulcan Logic Disassembler":http://pecl.php.net/package/vld to explore how PHP code is translated to bytecode)
+
+First one the these three *opcodes* is responsible for finding class definition, second one allocates memory for new object and prepares execution of constructor and finally the last one executes the constructor (if present; or is skipped by *Zend Engine* if constructor is not present). The later two are pretty simple and don't do much work in general, however we can't say the same about the first *opcode*. If we're lucky and the class has been already defined **ZEND_FETCH_CLASS** just finds this definition in a *HashTable*. However when we use a class for the first time **within one request**, *Zend Engine* doesn't know about its definition yet and has to find it, which fires up kind of heavy "autoloading":php.net/autoload.
+
+It is important to realize that *autoloading* happens in every single request and PHP is doing all the work from scratch (something can be avoided when we use a cache, I'll cover it later in this post).
+
+
+## Autoloading in big web apps
+
+If you happen to have a big PHP application, you usually end up with more places where your classes can be stored. In my company, "get_include_path":http://php.net/get_include_path contains sometimes more than 7 locations, and I guess it can be even more. *Standard autoloader* will try to search for requested class in all locations, which means up to 7 *syscalls* in my case just to test if given file exists. *Zend Autoloader* behaves in a similar way.
+
+When the file containing requested class if found, it is *include()'d*. It means PHP will parse it and execute its content, which will also tell PHP that there is new class available. In more complex cases and class hierarchies, this whole procedure will be called again for each *extended class*.
+
+The whole process of fetching class may end up pretty long:
+- **ZEND_FETCH_CLASS** (zend_vm_def.h) is the opcode being executed, and it calls
+- **zend_fetch_class_by_name** (zend_execute_API.c) which calls
+- **zend_hash_quick_find** - SUCCESS when already exists, otherwise calls
+- **autoload** which executes one or more PHP functions for autoloading, they call
+- 7x **file_exists** to test each possible filename, each means a *syscall* and possibly hard drive access, then
+- **include** which calls
+- **open** syscall to get handle of included file, then
+- **compile_file** + **read** syscalls and
+- **zend_execute**.
+- probably again if it needs parent class...
+
+Pretty much work to do just to instantiate a class, huh?
+
+## Caching and APC
+
+"Haha, I'm not a fool." you probably say. I guess you use "APC":http://pecl.php.net/package/apc to cache *bytecode* among multiple requests and thus save all the expensive compiling. But anyway, do you know how much you save by that? APC only caches bytecode of entire files, which  
+means you will avoid only *compile_file* function. Everything else, including many *access* syscalls and even *open* syscall, is executed even with APC.
+
+
+## Caching just classes
+
+In many PHP applications, class names are unique. Why can't we make a cache based on *class names*? We would avoid all the work from autoloading, via all *syscalls*, to execution of containing file. Anyway, we wanted **just the class** itself and not to execute the file where it is defined (in most cases).
+
+I asked myself this question and came to conclusion: "Actually, we can!". We can update *Zend Engine* to consult external function when searching for a class, and a PHP module can cache them. To be honest, I was probably not the first one with similar idea. I based my work on "patch":http://tekrat.com/2009/03/10/apc-lazy-loading-initial-support/ from **shire** and extended APC little bit further.
+
+I started with shire's patches and added simple modification: APC can *install* (understand as copy them from shared memory to thread's private memory) classes from it's cache when asked. It means once you have loaded a class, it can be fetched directly from cache without any other work. So even autoloader is **not called** for second time, if a class is found in cache.
+
+## Example
+
+Here is a simple code which may not make much sense in general, but should be good to illustrate how such cache works. 
+/---code php
+// Custom autoloader
+spl_autoload_register(function($className) {
+  echo "Autoloading $className\n";
+  include "$className.php";
+});
+
+// More path with libraries
+set_include_path('/www/lib1:/www/lib2:/www/lib3:' . get_include_path());
+
+file_exists('/tmp/start'); // helps tracking syscalls
+new MyClass1();
+new MyClass2();
+...
+file_exists('/tmp/end');
+\---
+
+When you execute it for the first time, you will see *echo* for each class being used. And not only echo, there are many *syscalls* as you can see in "strace log":http://juzna.cz/php/autoload/strace-1.log.
+
+But when executed for the second time, all classes seem to exist, as they're immediately copied from cache. Autoload is never called anymore and there are no *syscalls* within execution of the script. Have a look at second "strace log":http://juzna.cz/php/autoload/strace-2.log and try to find *access*es to `/tmp/start` and `/tmp/end` which tell where the script itself begun and ended.
+
+
+## Pitfalls 
+
+One may say that such cache cannot be invalidated automatically when you change a file. And he is right. But it doesn't have to be such a problem with bigger applications, which you update manually once a week or even less. Once you have pushed all files to production server, you can manually clear all the cache. After that, all classes will get cached and PHP won't need to access your hard drive at all whenever they're needed. That said, this can be a good optimization for production server, but has no reason in development.
+
+## Evaluation
+
+I haven't tested it yet in production, so I can't tell how much time it actually saves. Also, my patches are in alpha stage and will need improvements. My point was just to try how much work can we avoid in autoloading.
+
+You can get PHP patch from "GitHub":https://github.com/juzna/php-src/commit/9e288f5a41af6a0e9c96448e8bde7ab4182f942c and APC patch for now from my "web":http://juzna.cz/php/autoload/
+
+
+
+----------
+## Comments
+
+**kukulich** | 2011-09-08
+V češtině se mi dnes bude komentovat lépe.
+
+Není to sedminásobné volání file_exist nějak řešeno přes realpatch_cache, která myslím byla v 5.3 přidána nebo vylepšena?
+
+A děláš ty patche nad stable 5.3 nebo nad trunkem? 5.4 byla na spoustě míst výrazně zrychlena.
+
+
+**juzna.cz** | 2011-09-08
+Hi kukulich, php anyway needs to issue *access* syscall to test whether given file exists. My patch is against PHP trunk (however I did checkout couple of weeks ago) and APC trunk

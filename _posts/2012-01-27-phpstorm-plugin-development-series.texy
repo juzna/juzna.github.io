@@ -1,0 +1,12 @@
+### PhpStorm plugin development series
+
+I started developing a *custom language plugin* for *PhpStorm*, the best IDE for PHP I've met so far. But since the documentation for plugin development is rather poor and I have to dig in the code a lot, I decided to share my hardly gained knowledge with others.
+
+So first things you'll (I'll) need to start:
+* Learn Java ;)
+* Read overview of "IntelliJ IDEA Architecture":http://confluence.jetbrains.net/display/IDEADEV/IntelliJ+IDEA+Architectural+Overview
+* Read into to "Custom language development":http://confluence.jetbrains.net/display/IDEADEV/Developing+Custom+Language+Plugins+for+IntelliJ+IDEA
+
+I'll be working on support for **Latte**:http://doc.nette.org/en/templating#toc-latte *templating language* (part of **Nette**:http://nette.org framework), you can follow my progres on "GitHub":https://github.com/juzna/intellij-latte.
+
+Wish me luck, and see you next week.
