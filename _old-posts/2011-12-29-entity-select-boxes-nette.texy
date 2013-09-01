@@ -1,0 +1,51 @@
+### Entity Select-boxes & Nette
+
+**Forms** often contain a **selection**, e.g. when creating a *user* for in your app, you may need a *role* to be selected. If you use an *ORM*, you'd probably have `IdentityEntity` class in your app referring to an `RoleEntity` class. How will you create such a form? By adding plain *select* and converting **Role Entity** to **Role Id** back and forth?
+/---code php
+// creating form
+$roles = $roleRepository->findAll()->fetchPairs('id', 'name');
+$frm->addSelect('role', 'Role', $roles);
+
+// populating form
+$frm['role']->setValue($user->role->getId());
+
+// processing form
+$user->role = $roleRepository->find($frm['role']->getValue());
+\---
+
+It doesn't look that nice :( I think it will look much nicer if we can have **select-box for entities**. Imagine:
+/---code php
+// creating form
+$frm->addEntitySelect('role', 'Role', $roleRepository); // providing repository here
+
+// populating form
+$frm['role']->setValue($user->role); // setting an entity
+
+// processing form
+$user->role = $frm['role']->getValue(); // getting entities back
+\---
+
+It looks cleaner, doesn't it? We can also create an EntityMultiSelectBox (similar to classical MultiSelectBox).
+And it works great with "data-binding":http://blog.juzna.cz/2011/12/data-binding-in-nette-forms/, so that I don't need to write any boilerplate code when populating or saving the form:
+/---code php
+$frm->addEntitySelect('role', 'Role',
+   $this->getRepository(RoleEntity::getClassName()), 'name')
+  ->setRequired()->bind('role');
+\---
+Filling the form from entity and vice-versa is done automatically by data-binding.
+
+Sample implementation in a "gist":https://gist.github.com/1523891.
+
+
+
+----------
+## Comments
+
+**Filip Procházka (@HosipLan)** | 2011-12-29
+There is just one piece of puzzle missing. How would the select know which field use as title? 
+
+`$frm->addEntitySelect('role', 'Role', $roleRepository, $title = 'title');`
+
+
+**juzna.cz** | 2011-12-29
+@HosipLan: That's the last parameter for EntitySelectBox, it's `'name'` in my example but you can use anything you want. Or, you can specify a callback  instead to generate more complex values.

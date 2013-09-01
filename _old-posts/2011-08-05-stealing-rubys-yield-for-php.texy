@@ -1,0 +1,138 @@
+### Stealing Ruby's yield for PHP
+
+I tried to learn "Ruby":ruby-lang.org once because it's so popular and cool these days. But I must admit, I didn't like it much. You may think I'm kinda oldschool, but having quotation or exclamation marks in method names is just not for me. And letting anyone to modify methods in previously defined class is the kind of thing I will probably never open my mind to. Result: thanks, no! Ruby is just not the language for me.
+
+**Anyway** I don't want to throw all the Ruby stuff away. There are also some very nice features I like, and which I often miss in PHP. So in my "diving experiment":http://blog.juzna.cz/2011/07/diving-into-php-core/ I decided to swim into Ruby's world and steal some of their beauty for my <strike>underwater kingdom</strike> experimental PHP fork.
+
+### PHP iterators
+
+Ruby has a different approach to iterators than PHP has. In our (PHP) world we can create iterators by means of special types of classes. These implement either *Iterator* or *IteratorAggregate* interface, which allows us to create powerful iterators by implementing "just" a five methods. This can be pretty complicated and not even needed for most iterators we would like to create, so people tend to use imperative approaches like 
+/---code php
+while($row = mysql_fetch_assoc($result)) { ... }
+\---
+These may just not to seem kosher to everyone, especially for me. It doesn't really describes what we **want** to do.
+
+
+Here it comes *IteratorAggregate* to help us creating new iterators, where we need to implement only one method and it's done. One would usually create a big array (if not yet exists somewhere in application) and pass it to *ArrayIterator*. This may result in easier code, but big memory consumption.
+
+When loading data from database, you would probably end up with something like this:
+/---code php
+// Update relations between file entries in DB
+$relatedState = '...';
+$filesTable = Db_Manager::getTable('files');
+foreach($filesTable->fetchAll() as $file) {
+  $fp = fopen($file->path, 'r');
+  $relatedFiles = $filesTable->findRelatedFileTo($file, $relatedStyle)->fetchAll();
+  foreach($relatedFiles as $relatedFile) {
+    // do something with related file
+  }
+  ...
+  fclose($fp);
+}
+\---
+
+### Ruby iterators
+
+Ruby has a different approach to iterators by using "*yield*":http://www.ruby-doc.org/docs/ProgrammingRuby/html/tut_containers.html#UD statement. It's much easier in comparison with PHP. You don't need to create classes and implement many methods, just a single function is enough. If such  *generator function* has next iteration value ready, it uses **yield** statement to run associated block once, and then execution comes back to the generator. *Generator* can than focus on generating another value and *yielding* again (examples can be found in Ruby's documentation or on Google).
+
+Similar approach can be used in PHP nowadays. Database access similar to that one in previous paragraph would probably look like this:
+/---code php
+$relatedState = '...';
+$filesTable = Db_Manager::getTable('files');
+$filesTable->iterate(function($file) use ($filesTable, $relatedState) {
+  $fp = fopen($file->path, 'r');
+  $filesTable->findRelatedFileTo($file, $relatedStyle)->iterate(function($relatedFile) use ($file, $filesTable) {
+    // do something with related files
+  }); 
+  ...
+  fclose($fp);
+});
+\---
+
+This is possible to implement easily in PHP by callbacks (example implementation below). I wanted to make it even easier, as it is in Ruby. And it showed up not to be so difficult with my experimental "**code blocks**":http://blog.juzna.cz/2011/07/closures-vs-code-blocks. In cases with more local variables, these are shared between a *code block* and the function such block is defined within (i.e. in the same way a normal block after *foreach* behaves).
+
+/---code php
+class Db_Table {
+  // Executes callback for each row in DB
+  function iterate(Closure $callback) {
+    $result = $this->db->query(...);
+    while($row = mysql_fetch_object($result)) $callback->__invoke($row);
+  }
+  // more table methods would be here
+}
+\---
+
+### Cleaning syntax
+
+I tried to take the idea of **yield** in Ruby and add its support to PHP language. We can rewrite PHP code from last paragraph to take this benefit and make it shorter and much easier to read and understand.
+
+/---code php
+class Db_Table {
+  // Executes callback for each row in DB
+  function iterate() { // no arguments here
+    $result = $this->db->query(...);
+    while($row = mysql_fetch_object($result)) yield $row; // yield to associated code block
+  }
+}
+
+$relatedState = '...';
+$filesTable = Db_Manager::getTable('files');
+$filesTable->iterate() { |$file| // this code block will be used by *yield*; it receives one argument named $file
+  $fp = fopen($file->path, 'r');
+  $filesTable->findRelatedFileTo($file, $relatedStyle)->iterate() { |$relatedFile|
+    // do something with related files
+  }); 
+  ...
+  fclose($fp);
+});
+\---
+
+This may be a little shock for you, as the syntax won't be familiar to you at all. But it's very easy actually. Whenever you *call a function*, you can associate a block of code with it in the same way you would do it with a *foreach* cycle or *if* condition. Such function can then *yield*, which will run the block. Zero, one or more arguments can be passed with *yield* and they will be received in relevant block. Syntax is very similar to Ruby's one.
+
+
+### More fun with *yield*
+
+You can have much more fun with *yield*. The easier start would be searching how Ruby programmers use it. Basic examples to start can be generating "Fibonacci Sequence":http://langexplr.blogspot.com/2007/09/rubys-yield-statement.html
+
+/---code php
+function genFibonacci($limit) {
+  yield 1, 1; // value and position
+  yield 1, 2;
+  $a = $b = 1;
+  $i = 2;
+  while($i < $limit) {
+    $tmp = $a;
+    $a = $a + $b;
+    $b = $tmp;
+    yield $a, ++$i; // value and position
+  }
+}
+
+// Generate 10 values
+genFibonacci(10) { |$x, $pos| echo "Fibonacci number: $x at position $pos\n"; }
+\---
+
+
+### Summary
+
+Actually, this is not something what was impossible before, just a nicer way inspired by Ruby and Python. It's highly experimental, created mainly for fun, and can be found in my PHP fork on GitHub. Comments are welcome as always.
+
+
+
+----------
+## Comments
+
+**Jakub Vrána** | 2011-08-05
+The syntax `f() { |$val| /* code */; }` looks very confusing and strange for PHP.
+
+Is it possible to `break` from the code?
+
+
+**juzna.cz** | 2011-08-05
+I realise that the syntax look strange for PHP developers, but at the same time it's very familiar to Ruby programmers. I consider this rather an experiment so I tried to use the same syntax I know from Ruby. You can suggest better syntax if you want, but I consider this feature rather highly experimental at the moment.
+
+Break is not possible. I'm not sure if Ruby supports it and I can't imagine what would happen to the *generator method* in case of a break. Very good point though, I should think more about it. Thanks
+
+
+**Jakub Vrana** | 2012-02-02
+You may find interesting that HipHop for PHP (which is an alternative PHP engine running Facebook) supports yield operator. I couldn't find any public documentation for it however.

@@ -1,0 +1,22 @@
+### Mock vs final fights in testing
+
+There has always been a *war* between testers, who love **mocking** all classes, and library developers, who prevent misusing their code by means of **final** keyword. You cannot do both. Once a *class* (or *method*) is declared as *final*, it cannot be mocked (*extended*). Since testers need to test their applications built on top of 3rd party libraries, they always play second turn in this war. That's unlucky, since once a *final* is made, it cannot be defeated.
+
+Or can it?
+
+
+## Reflection - extended
+Here I present a mighty weapon for all the testers; or rather just a prototype for now. It gives you the power to remove existing *final* from *classes*/*methods* and thus make them *mockable*. "Here":https://gist.github.com/1621839#file_final_test.php is how to use it:
+/---code php
+final class B { ... }
+$refl = new ReflectionClass('B');
+$refl->setFinal(false);
+// follow the link above for more examples
+\---
+
+Voilà, the class is not *final* anymore and you can *mock* it freely.
+
+## How to
+A "patch":https://gist.github.com/1621839#file_php_finals.patch for PHP is needed atm, as this is an experimental feature. The syntax is also experimental, please add your suggestions.
+
+PS: This idea was presented by "@JanTvrdik":http://twitter.com/JanTvrdik on "Nette Brain Cloud":http://forum.nette.org/cs/9470-nette-brain-cloud-1-beta-brno-14-1-2012 meeting.
