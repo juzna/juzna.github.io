@@ -1,10 +1,18 @@
 ---
-layout: default
-title: me.getBrain().dump()
+layout: layout
+title: "Posts"
 ---
 
-{% for post in site.posts limit:5 %}
-<h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
-{{ post.content }}
-<em>Posted on {{ post.date | date_to_long_string }}.</em>
-{% endfor %}
+<section class="content">
+  <h1>me.getBrain().dump()</h1>
+  <div>Jan Dolecek and his silly ideas or dumb thoughts</div>
+
+  <h2>Recent Blog Posts</h2>
+  <ul class="listing">
+    {% for post in site.posts %}
+    <li>
+      <span>{{ post.date | date: "%B %e, %Y" }}</span> <a href="{{ post.url }}">{{ post.title }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>

@@ -1,0 +1,43 @@
+---
+layout: layout
+---
+
+<section class="content">
+  <h1>
+    <a href="{{ page.url }}">{{ page.title }}</a>
+  </h1>
+
+  <section class="byline">
+    {{ page.date | date: "%B %e, %Y" }}
+  </section>
+
+  {{ content }}
+
+  <section class="meta">
+    <h3>Discussion, links, and tweets</h3>
+    <section class="copy">
+      <a href="https://twitter.com/{{ site.twitter }}" target="_blank">
+        <img src="{{ site.gravatar_url }}?s=142" height="50" width="50" />
+      </a>
+
+      <p>
+        I'm a PHP &amp; JavaScript developer and I'm thrilled by poorly secured web apps.
+        In my free time I'm hacking Linux or PHP internals, or practically anything.
+        I love open-source and contribute to several projects.
+        I use tabs and curly brackets.
+      </p>
+      <p>
+        I work for <a href="http://www.peckadesign.cz">PeckaDesign</a> now and I'm happy there :)
+        Do you want to <a href="http://www.peckadesign.cz/php-programator">work</a> with me?
+      </p>
+
+      <p>
+        <a href="https://twitter.com/{{ site.twitter }}" target="_blank">Follow me on Twitter</a>
+      </p>
+
+      <a href="http://twitter.com/share" class="twitter-share-button" data-count="none" data-via="{{ site.twitter }}">Tweet</a>
+      <a href="http://twitter.com/{{ site.twitter }}" class="twitter-follow-button" data-show-count="false">Follow @{{ site.twitter }}</a>
+      <script src="http://platform.twitter.com/widgets.js" type="text/javascript"></script>
+    </section>
+  </section>
+</section>

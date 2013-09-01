@@ -1,0 +1,12 @@
+markdown: rdiscount
+pygments: true
+permalink: /posts/:title
+rdiscount:
+  extensions: [smart]
+
+name: Jan Dolecek
+url: http://newblog.juzna.cz
+description: Jan Dolecek and his silly ideas or dumb thoughts
+twitter: juznacz
+github: juzna
+gravatar_url: http://gravatar.com/avatar/522c88facde8ba67dd5cfacfe252cab5
