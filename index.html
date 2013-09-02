@@ -1,18 +1,33 @@
 ---
-layout: layout
-title: "Posts"
+layout: default
+title: "Jan Doleček"
 ---
 
-<section class="content">
-  <h1>me.getBrain().dump()</h1>
-  <div>Jan Dolecek and his silly ideas or dumb thoughts</div>
+<p>
+	I'm a PHP & JavaScript developer and I'm thrilled by poorly secured web apps.
+	In my free time I'm hacking Linux or PHP internals, or practically anything.
+	I love open-source and contribute to several projects.
+	I use tabs and curly brackets.
+</p>
 
-  <h2>Recent Blog Posts</h2>
-  <ul class="listing">
-    {% for post in site.posts %}
-    <li>
-      <span>{{ post.date | date: "%B %e, %Y" }}</span> <a href="{{ post.url }}">{{ post.title }}</a>
-    </li>
-    {% endfor %}
-  </ul>
-</section>
+<h2>More about me</h2>
+<ul class="listing" style="margin-left: 2em;">
+	<li style="list-style-image: url('favicons/cv.png');"><a href="cv.pdf">Curriculum vitae (pdf)</a></li>
+	<li style="list-style-image: url('favicons/twitter.png');"><a href="https://twitter.com/juznacz">Twitter</a></li>
+	<li style="list-style-image: url('favicons/github.png');"><a href="https://github.com/juzna/">GitHub profile</a> with most of my projects</li>
+	<li style="list-style-image: url('favicons/blog.png');"><a href="http://blog.juzna.cz">My blog</a> about programming</li>
+</ul>
+
+
+<h2>Current work</h2>
+<ul class="listing" style="margin-left: 2em;">
+	<li style="list-style-image: url('favicons/pecka.ico');">Lead Developer @ <a href="http://www.peckadesign.cz" rel="ext">PeckaDesign</a> in Brno</li>
+</ul>
+
+
+<h2>Other projects</h2>
+<ul class="listing" style="margin-left: 2em;">
+	<li style="list-style-image: url('favicons/nette.ico');"><a href="http://nette.org/">Nette Framework</a> - PHP MVC framework I contribute to</li>
+	<li style="list-style-image: "><a href="http://exekutorweb.cz/">ExekutorWeb (CZ)</a> - Web based system for distraining brokers I developed</li>
+	<li style="list-style-image: "><a href="http://www.helemik.cz/vyvoj/">Servisweb (CZ)</a> - Web based system Internet providers (ISP) I developed</li>
+</ul>

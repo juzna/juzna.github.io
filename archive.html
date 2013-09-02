@@ -1,0 +1,16 @@
+---
+layout: default
+title: Archive
+---
+
+<h3>Archive</h3>
+<div id="weblogPostBody">
+	{% for month in page.months %}
+	<h4>{{ month | date:"%B" }} <small>{{ month | date:"%Y" }}</small></h4>
+	<ul>
+		{% for post in page.posts_by_month[month] %}
+		<li><a href="{{ post.url }}">{{ post.title }}</a> <small>{{ post.date | date:"%d/%m/%y" }}</small></li>
+		{% endfor %}
+	</ul>
+	{% endfor %}
+</div>
