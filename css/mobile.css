@@ -4,7 +4,7 @@
   margin: 0;
   padding: 25px; }
   .sidebar img {
-    display: none; }
+    float: right;}
   .sidebar .name {
     display: inline; }
     .sidebar .name #fname, .sidebar .name #lname {
@@ -28,3 +28,8 @@
   width: inherit; }
   .content h1 {
     margin: 0 0 5px 0; }
+
+.footer {
+	margin: 0;
+	padding: 5px 25px;
+	width: inherit; }

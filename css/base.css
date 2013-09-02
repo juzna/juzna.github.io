@@ -205,3 +205,12 @@ a {
     font-weight: bold; }
   .content .talk-design .color .white {
     color: #fff; }
+
+.footer {
+	max-width: 650px;
+	margin-left: 120px;
+	margin-right: 20px;
+	margin-bottom: 50px;
+	margin-top: 1em;
+	clear: both;
+	text-align: center; }
