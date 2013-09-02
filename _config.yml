@@ -4,7 +4,7 @@ permalink: /posts/:title
 rdiscount:
   extensions: [smart]
 
-name: Jan Dolecek
+name: Jan Doleček
 url: http://newblog.juzna.cz
 description: Jan Dolecek and his silly ideas or dumb thoughts
 twitter: juznacz
